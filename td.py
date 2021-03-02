@@ -69,7 +69,7 @@ def get_td(ip_address):
                 "idempotent":True,
                 "input": {
                     "type": "object",
-                    "required": ["string","x", "y", "brightness","monospaced"],
+                    "required": ["string","x", "y", "brightness"],
                     "properties": {
                         "string": {
                             "description": "The string to display.",
@@ -107,7 +107,7 @@ def get_td(ip_address):
                 }]
             },
             "write_char": {
-                "description": "Write a single char to the buffer. Returns the x and y coordinates of the bottom left-most corner of the drawn character.Shows the char for 3 secs",
+                "description": "Write a single char to the buffer. Returns the x and y coordinates of the bottom left-most corner of the drawn character.Shows the char for 5 secs",
                 "safe":False,
                 "idempotent":True,
                 "input": {
@@ -268,3 +268,5 @@ def get_td(ip_address):
            
         }
     }
+
+    #buffer kelimesini daha anlasilir yaz, write string duration uzunluga gore ayarla yaz descr., return leri kaldir (output), x,y default degerleri desc de ve "default:" seklinde belir, scroll implementation ve imgae ekle, pulse veya baska bi example ekle ekle, display size a observable flase ekle, display size da tuple manupilation, bilgi tam dogru formatta gelmemis (json dumps =y)
