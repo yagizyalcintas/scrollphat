@@ -112,7 +112,7 @@ def get_td(ip_address):
                 "idempotent":True,
                 "input": {
                     "type": "object",
-                    "required": ["char","o_x", "o_y", "brightness"],
+                    "required": ["char", "brightness"],
                     "properties": {
                         "char": {
                             "description": "Char to display- either an integer ordinal or a single letter",
