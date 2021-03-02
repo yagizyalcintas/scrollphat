@@ -105,9 +105,17 @@ def writeChar():
         valid_input = Draft6Validator(schema).is_valid(request.json)
 
         if valid_input:
+            o_x = 5
+            o_y = 0
             Char = str(request.json["char"])
-            o_x = int(request.json["o_x"])
-            o_y = int(request.json["o_y"])
+            try:
+                o_x = int(request.json["o_x"])
+            except Exception as e:
+                    print(e)
+            try:
+                o_y = int(request.json["o_y"])
+            except Exception as e:
+                    print(e)
             bright = float(request.json["brightness"])
 
             scrollphathd.clear()
