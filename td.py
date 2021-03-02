@@ -6,7 +6,7 @@ def get_td(ip_address):
         ],
         'id': 'de:tum:ei:esi:phat:{}'.format(ip_address),
         'title': 'ScrollPhat HD',
-        'description': 'A scroll-phat-hd that can be remotely controlled.',
+        'description': "A scroll-phat-hd that can be remotely controlled.",
         "securityDefinitions": {"nosec_sc": {"scheme": "nosec"}},
         "security": "nosec_sc",
         'properties': {
@@ -28,25 +28,6 @@ def get_td(ip_address):
                     "contentType": "application/json",
                     "op": ["readproperty"]
                 }]
-            },
-            'buffer_size': {
-                "title": "The Buffer Size",
-                "description": "    Get the size/shape of the internal buffer. Returns a tuple containing the width and height of the buffer.",
-                "type": "object",
-                "properties": {
-                    "width" : {
-                        "type" : "integer"
-                    },
-                    "height" : {
-                        "type" : "integer"
-                    }
-                },
-                "readOnly": True,
-                "forms": [{
-                    "href": "http://{}/properties/buffer_size".format(ip_address),
-                    "contentType": "application/json",
-                    "op": ["readproperty"]
-                }]
             }
             
         },
@@ -62,12 +43,12 @@ def get_td(ip_address):
                         "x": {
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 17
+                            "maximum": 16
                         },
                         "y": {
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 6
                         },
                         "brightness": {
                             "type": "number",
@@ -94,17 +75,23 @@ def get_td(ip_address):
                             "description": "The string to display.",
                             "type": "string"
                         },
+                        "time":{
+                            "description": "duration the string keep scrolling, it is 5 seconds by default.",
+                            "type":"integer",
+                            "minimum": 3,
+                            "maximum": 30
+                        },
                         "x": {
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 17
+                            "maximum": 16
                         },
                         "y": {
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 6
                         },
                         "brightness": {
                             "type": "number",
@@ -123,90 +110,36 @@ def get_td(ip_address):
                 }]
             },
             "write_char": {
-                "description": "Write a single char to the buffer. Returns the x and y coordinates of the bottom left-most corner of the drawn character.",
+                "description": "Write a single char to the buffer. Returns the x and y coordinates of the bottom left-most corner of the drawn character.Shows the char for 3 secs",
                 "safe":False,
                 "idempotent":True,
                 "input": {
                     "type": "object",
-                    "required": ["string","o_x", "o_y", "brightness","monospaced"],
+                    "required": ["char","o_x", "o_y", "brightness"],
                     "properties": {
                         "char": {
                             "description": "Char to display- either an integer ordinal or a single letter",
-                            "type": "string"
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1
                         },
                         "o_x": {
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 17
+                            "maximum": 16
                         },
                         "o_y": {
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 6
                         },
                         "brightness": {
                             "type": "number",
                             "minimum": 0.0,
                             "maximum": 1.0    
-                        },
-                        "monospaced" : {
-                            "type": "boolean"
                         }
-                    },
-                },
-                "forms": [{
-                    "href": "http://{}/actions/write_char".format(ip_address),
-                    "contentType": "application/json",
-                    "op": "invokeaction"
-                }]
-            },
-            "set_graph": {
-                "description": "Plot a series of values into the display buffer.",
-                "safe":False,
-                "idempotent":True,
-                "input": {
-                    "type": "object",
-                    "required": ["brightness","values"],
-                    "properties": {
-                        "values": {
-                            "description": "A list of numerical values to display",
-                            "type": "array",
-                            "items" : {
-                                "type": "number"
-                            }
-                        },
-                        "x": {
-                            "description": "x position of graph in display buffer (default 0)",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 17
-                        },
-                        "y": {
-                            "description": "y position of graph in display buffer (default 0)",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1
-                        },
-                        "brightness": {
-                            "type": "number",
-                            "minimum": 0.0,
-                            "maximum": 1.0    
-                        },
-                        "width": {
-                            "description": "Width of the graph (default is buffer 17),
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 17
-                        },
-                        "height": {
-                            "description": "Height of the graph (default is buffer 7)",
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 7
-                        }
-                        
                     },
                 },
                 "forms": [{
