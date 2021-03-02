@@ -85,21 +85,18 @@ def get_td(ip_address):
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 16
+                            "maximum": 17
                         },
                         "y": {
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 6
+                            "maximum": 7
                         },
                         "brightness": {
                             "type": "number",
                             "minimum": 0.0,
                             "maximum": 1.0    
-                        },
-                        "monospaced" : {
-                            "type": "boolean"
                         }
                     },
                 },
@@ -127,13 +124,13 @@ def get_td(ip_address):
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 16
+                            "maximum": 17
                         },
                         "o_y": {
                             "description": "Offset x - distance of the string from the left of the buffer",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 6
+                            "maximum": 7
                         },
                         "brightness": {
                             "type": "number",
@@ -155,7 +152,7 @@ def get_td(ip_address):
                 "idempotent": True,
                 "input": {
                     "type": "object",
-                    "required": ["brightness","x", "y"],
+                    "required": ["brightness"],
                     "properties": {
                         "x": {
                             "description": "Offset x - distance of the area from the left of the buffer.",
@@ -167,7 +164,7 @@ def get_td(ip_address):
                             "description": "Offset y - distance of the area from the left of the buffer.",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 7
                         },
                         "brightness": {
                             "type": "number",
@@ -194,7 +191,7 @@ def get_td(ip_address):
                     "op": "invokeaction"
                 }]
             },
-            "clear_rect(": {
+            "clear_rect": {
                 "description": "Clear a rectangle.",
                 "safe": False,
                 "idempotent": True,
@@ -212,7 +209,7 @@ def get_td(ip_address):
                             "description": "Offset y - distance of the area from the left of the buffer.",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 7
                         },
                         "width": {
                             "description": "Width of the area (default is buffer 17)",
