@@ -1,260 +1,270 @@
-import requests
-import socket
-import time
-import json
-import _thread
-from random import randint
-from flask import Flask, request, abort
-from phatTD import get_td
-import scrollphathd
-from jsonschema import Draft6Validator
-
-# ---------------- CONFIG ----------------
-TD_DIRECTORY_ADDRESS = "http://172.16.1.100:8080"
-LISTENING_PORT = 8080
-DEFAULT_BRIGHTNESS = 0.5
-
-td = 0
-app = Flask(__name__)
-
-
-@app.route("/")
-def thing_description():
-    return json.dumps(get_td(ip_addr)), {'Content-Type': 'application/json'}
-
-
-@app.route("/properties/display_size", methods=["GET"])
-def display_size():
-    return str(scrollphathd.get_shape()), {'Content-Type': 'application/json'}
-
-
-@app.route("/actions/set_pixel", methods=["POST"])
-def setPixel():
-    if request.is_json:
-        schema = td["actions"]["set_pixel"]["input"]
-        valid_input = Draft6Validator(schema).is_valid(request.json)
-
-        if valid_input:
-            try:
-                bright = float(request.json["brightness"])
-                x = int(request.json["x"])
-                y = int(request.json["y"])
-                scrollphathd.clear()
-                scrollphathd.show()
-                scrollphathd.set_pixel(x, y, bright)
-                scrollphathd.show()
-                return "", 204
-            except Exception as e:
-                print(e)
-                abort(400)
-        else:
-            abort(400)
-    else:
-        abort(415)  # Wrong media type.
-
-
-@app.route("/actions/write_string", methods=["POST"])
-def writeString():
-    if request.is_json:
-        schema = td["actions"]["write_string"]["input"]
-        valid_input = Draft6Validator(schema).is_valid(request.json)
-
-        if valid_input:
-            dur = 5
-            count = 0
-            try:
-                try:
-                    dur = int(request.json["time"])
-                except Exception as e:
-                    print(e)
-                Str = " " + str(request.json["string"])
-                print(Str)
-                x = int(request.json["x"])
-                print(x)
-                y = int(request.json["y"])
-                print(y)
-                bright = float(request.json["brightness"])
+def get_td(ip_address):
+    return {
+        "@context": [
+            "https://www.w3.org/2019/wot/td/v1",
+            {"@language": "en"}
+        ],
+        'id': 'de:tum:ei:esi:phat:{}'.format(ip_address),
+        'title': 'ScrollPhat HD',
+        'description': "A scroll-phat-hd that can be remotely controlled.",
+        "securityDefinitions": {"nosec_sc": {"scheme": "nosec"}},
+        "security": "nosec_sc",
+        'properties': {
+            'display_size': {
+                "title": "The Display Size",
+                "description": "Get the size/shape of the display. Returns a tuple containing the width and height of the display, after applying rotation.",
+                "type": "object",
+                "properties": {
+                    "width" : {
+                        "type" : "integer"
+                    },
+                    "height" : {
+                        "type" : "integer"
+                    }
+                },
+                "readOnly": True,
+                "forms": [{
+                    "href": "http://{}/properties/display_size".format(ip_address),
+                    "contentType": "application/json",
+                    "op": ["readproperty"]
+                }]
+            }
             
-                scrollphathd.clear()
-                scrollphathd.show()
-                scrollphathd.write_string(Str, x, y, font=None, letter_spacing=1, brightness=bright, monospaced=True, fill_background=False)
-                scrollphathd.flip(x=True, y=True)
+        },
+        "actions": {
+            "set_pixel": {
+                "description": "Light a specific single pixel with a given brightness.",
+                "safe":False,
+                "idempotent":True,
+                "input": {
+                    "type": "object",
+                    "required": ["x", "y", "brightness"],
+                    "properties": {
+                        "x": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 16
+                        },
+                        "y": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 6
+                        },
+                        "brightness": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 1.0    
+                        }
+                    },
+                },
+                "forms": [{
+                    "href": "http://{}/actions/set_pixel".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+            "write_string": {
+                "description": "Write a string to the buffer. Calls draw_char for each character.",
+                "safe":False,
+                "idempotent":True,
+                "input": {
+                    "type": "object",
+                    "required": ["string","x", "y", "brightness","monospaced"],
+                    "properties": {
+                        "string": {
+                            "description": "The string to display.",
+                            "type": "string"
+                        },
+                        "time":{
+                            "description": "duration the string keep scrolling, it is 5 seconds by default.",
+                            "type":"integer",
+                            "minimum": 3,
+                            "maximum": 30
+                        },
+                        "x": {
+                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 17
+                        },
+                        "y": {
+                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                        },
+                        "brightness": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 1.0    
+                        }
+                    },
+                },
+                "forms": [{
+                    "href": "http://{}/actions/write_string".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+            "write_char": {
+                "description": "Write a single char to the buffer. Returns the x and y coordinates of the bottom left-most corner of the drawn character.Shows the char for 3 secs",
+                "safe":False,
+                "idempotent":True,
+                "input": {
+                    "type": "object",
+                    "required": ["char", "brightness"],
+                    "properties": {
+                        "char": {
+                            "description": "Char to display- either an integer ordinal or a single letter",
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1
+                        },
+                        "o_x": {
+                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 17
+                        },
+                        "o_y": {
+                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                        },
+                        "brightness": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 1.0    
+                        }
+                    },
+                },
+                "forms": [{
+                    "href": "http://{}/actions/write_char".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
 
-                while count < dur*10:
-                    scrollphathd.show()
-                    scrollphathd.scroll(1)
-                    time.sleep(0.05)
-                    count = count + 1
-                scrollphathd.clear()
-                scrollphathd.show()
-                return "", 204
-            except Exception as e:
-                print(e)
-                abort(400)
-        else:
-            abort(400)
-            print("wrong input")
-    else:
-        abort(415)  # Wrong media type.
+            "fill": {
+                "description": "Fill an area of the display.",
+                "safe": False,
+                "idempotent": True,
+                "input": {
+                    "type": "object",
+                    "required": ["brightness"],
+                    "properties": {
+                        "x": {
+                            "description": "Offset x - distance of the area from the left of the buffer.",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 17
+                        },
+                        "y": {
+                            "description": "Offset y - distance of the area from the left of the buffer.",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                        },
+                        "brightness": {
+                            "type": "number",
+                            "minimum": 0.0,
+                            "maximum": 1.0    
+                        },
+                        "width": {
+                            "description": "Width of the area (default is buffer width)",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 17
+                        },
+                        "height": {
+                            "description": "Height of the area (default is buffer height)",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                        }
+                     },
+                },
+                "forms": [{
+                    "href": "http://{}/actions/fill".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+            "clear_rect": {
+                "description": "Clear a rectangle.",
+                "safe": False,
+                "idempotent": True,
+                "input": {
+                    "type": "object",
+                    "required": ["x", "y"],
+                    "properties": {
+                        "x": {
+                            "description": "Offset x - distance of the area from the left of the buffer.",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 17
+                        },
+                        "y": {
+                            "description": "Offset y - distance of the area from the left of the buffer.",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                        },
+                        "width": {
+                            "description": "Width of the area (default is buffer 17)",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 17
+                        },
+                        "height": {
+                            "description": "Height of the area (default is buffer 7)",
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 7
+                        }
+                     },
+                },
+                "forms": [{
+                    "href": "http://{}/actions/clear_rect".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+            
+            "clear": {
+                "description": "clears all pixels.",
+                "safe": False,
+                "idempotent": True,
+                "forms": [{
+                    "href": "http://{}/actions/clear".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+            "scroll" : {
+                "description": "Scroll pHAT HD displays an 17x7 pixel window into the bufer, which starts at the left offset and wraps around. The x and y values are added to the internal scroll offset.",
+                "input" : {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "description": "Amount to scroll on x-axis (default 1)",
+                            "type": "integer",
+                            
+                        },
+                        "y": {
+                            "description": "Amount to scroll on y-axis (default 0)",
+                            "type": "integer",
+                        }
+                    }
+                },
+                "forms": [{
+                    "href": "http://{}/actions/scroll".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
 
-
-@app.route("/actions/write_char", methods=["POST"])
-def writeChar():
-    if request.is_json:
-        schema = td["actions"]["write_char"]["input"]
-        valid_input = Draft6Validator(schema).is_valid(request.json)
-
-        if valid_input:
-            o_x = 5
-            o_y = 0
-            Char = str(request.json["char"])
-            try:
-                o_x = int(request.json["o_x"])
-            except Exception as e:
-                    print(e)
-            try:
-                o_y = int(request.json["o_y"])
-            except Exception as e:
-                    print(e)
-            bright = float(request.json["brightness"])
-
-            scrollphathd.clear()
-            scrollphathd.show()
-            scrollphathd.draw_char(o_x, o_y, Char, font=None,brightness=bright, monospaced=True)
-            scrollphathd.flip(x=True, y=True)
-            scrollphathd.show()
-            time.sleep(3)
-            return "", 204
-        else:
-            abort(400)
-            print("wrong input")
-    else:
-        abort(415)  # Wrong media type.
-
-
-@app.route("/actions/fill", methods=["POST"])
-def fillArea():
-    if request.is_json:
-        schema = td["actions"]["fill"]["input"]
-        valid_input = Draft6Validator(schema).is_valid(request.json)
-
-        if valid_input:
-            x = 0
-            y = 0
-            w = 17
-            h = 6
-            try:
-                x = int(request.json["x"])
-            except Exception as e:
-                print(e)
-            try:
-                y = int(request.json["y"])
-            except Exception as e:
-                print(e)
-            try:
-                w = request.json["width"]
-            except Exception as e:
-                print(e)
-            bright = float(request.json["brightness"])
-            try:
-                h = request.json["height"]
-            except Exception as e:
-                print(e)
-            scrollphathd.clear()
-            scrollphathd.show()
-            scrollphathd.fill(brightness=bright, x=x, y=y, width=w, height=h)
-            scrollphathd.show()
-            return "", 204
-        else:
-            abort(400)
-            print("wrong input")
-    else:
-        abort(415)  # Wrong media type.
-
-
-@app.route("/actions/clear_rect", methods=["POST"])
-def clearArea():
-    if request.is_json:
-        schema = td["actions"]["clear_rect"]["input"]
-        valid_input = Draft6Validator(schema).is_valid(request.json)
-
-        if valid_input:
-            x = 0
-            y = 0
-            w = 17
-            h = 6
-            try:
-                x = int(request.json["x"])
-            except Exception as e:
-                print(e)
-            try:
-                y = int(request.json["y"])
-            except Exception as e:
-                print(e)
-            try:
-                w = request.json["width"]
-            except Exception as e:
-                print(e)
-            try:
-                h = request.json["height"]
-            except Exception as e:
-                print(e)
-            scrollphathd.clear_rect(x, y, w, h)
-            scrollphathd.show()
-            return "", 204
-        else:
-            abort(400)
-            print("wrong input")
-    else:
-        abort(415)  # Wrong media type.
-
-
-@app.route("/actions/clear", methods=["POST"])
-def Clear():
-    if request.is_json:
-
-        scrollphathd.clear()
-        scrollphathd.show()
-
-        return "", 204
-    else:
-        abort(415)  # Wrong media type.
-
-
-def submit_td(ip_addr, tdd_address):
-    global td 
-    td = get_td(ip_addr)
-    print("Uploading TD to directory ...")
-    while True:
-        try:
-            r = requests.post("{}/td".format(tdd_address), json=td)
-            r.close()
-            print("Got response: ", r.status_code)
-            if 200 <= r.status_code <= 299:
-                print("TD uploaded!")
-                return
-            else:
-                print("TD could not be uploaded. Will try again in 15 Seconds...")
-                time.sleep(15)
-        except Exception as e:
-            print(e)
-            print("TD could not be uploaded. Will try again in 15 Seconds...")
-            time.sleep(15)
-
-
-# wait for Wifi to connect
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-while True:
-    try:
-        # connect to router to ensure a successful connection
-        s.connect(('172.16.1.1', 80))
-        ip_addr = s.getsockname()[0] + ":" + str(LISTENING_PORT)
-        break
-    except OSError:
-        time.sleep(5)
-
-# Submit TD to directory
-_thread.start_new_thread(submit_td, (ip_addr, TD_DIRECTORY_ADDRESS))
-
-# Run app server
-app.run(host='0.0.0.0', port=8080)
+            }
+           
+        }
+    }
