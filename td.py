@@ -4,27 +4,23 @@ def get_td(ip_address):
             "https://www.w3.org/2019/wot/td/v1",
             {"@language": "en"}
         ],
-        'id': 'de:tum:ei:esi:phat:{}'.format(ip_address),
+        'id': 'de:tum:ei:esi:phat',
         'title': 'ScrollPhat HD',
         'description': "A scroll-phat-hd that can be remotely controlled.",
         "securityDefinitions": {"nosec_sc": {"scheme": "nosec"}},
         "security": "nosec_sc",
         'properties': {
-            'display_size': {
+            'displaySize': {
                 "title": "The Display Size",
-                "description": "Get the size/shape of the display. Returns a tuple containing the width and height of the display, after applying rotation.",
-                "type": "object",
-                "properties": {
-                    "width" : {
-                        "type" : "integer"
-                    },
-                    "height" : {
-                        "type" : "integer"
-                    }
+                "description": "Get the size/shape of the display. Returns a tuple containing the width and height of the display",
+                "type": "array",
+                "items": {
+                    "type": "integer"
                 },
+                
                 "readOnly": True,
                 "forms": [{
-                    "href": "http://{}/properties/display_size".format(ip_address),
+                    "href": "http://{}/properties/displaySize".format(ip_address),
                     "contentType": "application/json",
                     "op": ["readproperty"]
                 }]
@@ -32,21 +28,24 @@ def get_td(ip_address):
             
         },
         "actions": {
-            "set_pixel": {
-                "description": "Light a specific single pixel with a given brightness.",
+            "setPixel": {
+                "title": "Turn on Pixel",
+                "description": "Light a specific single pixel with a given brightness. x and y are 5 by default.",
                 "safe":False,
                 "idempotent":True,
                 "input": {
                     "type": "object",
-                    "required": ["x", "y", "brightness"],
+                    "required": ["brightness"],
                     "properties": {
                         "x": {
                             "type": "integer",
+                            "default": 5,
                             "minimum": 0,
                             "maximum": 16
                         },
                         "y": {
                             "type": "integer",
+                            "default": 5,
                             "minimum": 0,
                             "maximum": 6
                         },
@@ -58,64 +57,65 @@ def get_td(ip_address):
                     },
                 },
                 "forms": [{
-                    "href": "http://{}/actions/set_pixel".format(ip_address),
+                    "href": "http://{}/actions/setPixel".format(ip_address),
                     "contentType": "application/json",
                     "op": "invokeaction"
                 }]
             },
-            "write_string": {
-                "description": "Write a string to the buffer. Calls draw_char for each character.",
+            "writeString": {
+                "title": "Display String",
+                "description": "Write a string to the screen. Calls draw_char for each character.",
                 "safe":False,
                 "idempotent":True,
                 "input": {
                     "type": "object",
-                    "required": ["string","x", "y", "brightness","monospaced"],
+                    "required": ["string","x", "y", "brightness"],
                     "properties": {
                         "string": {
                             "description": "The string to display.",
-                            "type": "string"
+                            "type": "string",
+                            "maxLength": 50
                         },
                         "time":{
-                            "description": "duration the string keep scrolling, it is 5 seconds by default.",
+                            "description": "duration the string keep scrolling, it is 5 seconds by default. Adjust the duration according to the lenght of your string.",
+                            "default": 5,
                             "type":"integer",
                             "minimum": 3,
                             "maximum": 30
                         },
                         "x": {
-                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "description": "Offset x - distance of the string from the left of the screen",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 16
+                            "maximum": 17
                         },
                         "y": {
-                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "description": "Offset x - distance of the string from the left of the screen",
                             "type": "integer",
                             "minimum": 0,
-                            "maximum": 6
+                            "maximum": 7
                         },
                         "brightness": {
                             "type": "number",
                             "minimum": 0.0,
                             "maximum": 1.0    
-                        },
-                        "monospaced" : {
-                            "type": "boolean"
                         }
                     },
                 },
                 "forms": [{
-                    "href": "http://{}/actions/write_string".format(ip_address),
+                    "href": "http://{}/actions/writeString".format(ip_address),
                     "contentType": "application/json",
                     "op": "invokeaction"
                 }]
             },
-            "write_char": {
-                "description": "Write a single char to the buffer. Returns the x and y coordinates of the bottom left-most corner of the drawn character.Shows the char for 3 secs",
+            "writeChar": {
+                "title": "Display Character",
+                "description": "Write a single char to the screen. Returns the x and y coordinates of the bottom left-most corner of the drawn character.Shows the char for 5 secs",
                 "safe":False,
                 "idempotent":True,
                 "input": {
                     "type": "object",
-                    "required": ["char","o_x", "o_y", "brightness"],
+                    "required": ["char", "brightness"],
                     "properties": {
                         "char": {
                             "description": "Char to display- either an integer ordinal or a single letter",
@@ -124,16 +124,18 @@ def get_td(ip_address):
                             "maxLength": 1
                         },
                         "o_x": {
-                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "description": "Offset x - distance of the string from the left of the screen. By default its value is 5",
                             "type": "integer",
+                            "default": 5,
                             "minimum": 0,
-                            "maximum": 16
+                            "maximum": 17
                         },
                         "o_y": {
-                            "description": "Offset x - distance of the string from the left of the buffer",
+                            "description": "Offset x - distance of the string from the left of the screen. By default its value is 0",
                             "type": "integer",
+                            "default": 0,
                             "minimum": 0,
-                            "maximum": 6
+                            "maximum": 7
                         },
                         "brightness": {
                             "type": "number",
@@ -143,31 +145,34 @@ def get_td(ip_address):
                     },
                 },
                 "forms": [{
-                    "href": "http://{}/actions/write_char".format(ip_address),
+                    "href": "http://{}/actions/writeChar".format(ip_address),
                     "contentType": "application/json",
                     "op": "invokeaction"
                 }]
             },
 
             "fill": {
+                "title": "Fill the Screen",
                 "description": "Fill an area of the display.",
                 "safe": False,
                 "idempotent": True,
                 "input": {
                     "type": "object",
-                    "required": ["brightness","x", "y"],
+                    "required": ["brightness"],
                     "properties": {
                         "x": {
-                            "description": "Offset x - distance of the area from the left of the buffer.",
+                            "description": "Offset x - distance of the area from the left of the screen. 0 by default",
                             "type": "integer",
+                            "default": 0,
                             "minimum": 0,
                             "maximum": 17
                         },
                         "y": {
-                            "description": "Offset y - distance of the area from the left of the buffer.",
+                            "description": "Offset y - distance of the area from the left of the screen. 0 by default",
                             "type": "integer",
+                            "default": 0,
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 7
                         },
                         "brightness": {
                             "type": "number",
@@ -175,14 +180,16 @@ def get_td(ip_address):
                             "maximum": 1.0    
                         },
                         "width": {
-                            "description": "Width of the area (default is buffer width)",
+                            "description": "Width of the area. 17 by default",
                             "type": "integer",
+                            "default": 17,
                             "minimum": 0,
                             "maximum": 17
                         },
                         "height": {
-                            "description": "Height of the area (default is buffer height)",
+                            "description": "Height of the area. 7 by default",
                             "type": "integer",
+                            "default": 7,
                             "minimum": 0,
                             "maximum": 7
                         }
@@ -194,8 +201,9 @@ def get_td(ip_address):
                     "op": "invokeaction"
                 }]
             },
-            "clear_rect(": {
-                "description": "Clear a rectangle.",
+            "clearRect": {
+                "title": "Clear Screen Area",
+                "description": "Clear a specified rectangular area of the screen.",
                 "safe": False,
                 "idempotent": True,
                 "input": {
@@ -203,39 +211,44 @@ def get_td(ip_address):
                     "required": ["x", "y"],
                     "properties": {
                         "x": {
-                            "description": "Offset x - distance of the area from the left of the buffer.",
+                            "description": "Offset x - distance of the area from the left of the screen. 0 by default",
                             "type": "integer",
+                            "default": 0,
                             "minimum": 0,
                             "maximum": 17
                         },
                         "y": {
-                            "description": "Offset y - distance of the area from the left of the buffer.",
+                            "description": "Offset y - distance of the area from the left of the screen. 0 by default",
                             "type": "integer",
+                            "default": 0,
                             "minimum": 0,
-                            "maximum": 1
+                            "maximum": 7
                         },
                         "width": {
-                            "description": "Width of the area (default is buffer 17)",
+                            "description": "Width of the area. 17 by default",
                             "type": "integer",
+                            "default": 17,
                             "minimum": 0,
                             "maximum": 17
                         },
                         "height": {
-                            "description": "Height of the area (default is buffer 7)",
+                            "description": "Height of the area. 7 by default",
                             "type": "integer",
+                            "default": 7,
                             "minimum": 0,
                             "maximum": 7
                         }
                      },
                 },
                 "forms": [{
-                    "href": "http://{}/actions/clear_rect".format(ip_address),
+                    "href": "http://{}/actions/clearRect".format(ip_address),
                     "contentType": "application/json",
                     "op": "invokeaction"
                 }]
             },
             
             "clear": {
+                "title": "Clear the entire screen.",
                 "description": "clears all pixels.",
                 "safe": False,
                 "idempotent": True,
@@ -246,18 +259,21 @@ def get_td(ip_address):
                 }]
             },
             "scroll" : {
+                "title": "Shift Image",
                 "description": "Scroll pHAT HD displays an 17x7 pixel window into the bufer, which starts at the left offset and wraps around. The x and y values are added to the internal scroll offset.",
                 "input" : {
                     "type": "object",
                     "properties": {
                         "x": {
-                            "description": "Amount to scroll on x-axis (default 1)",
+                            "description": "Amount to scroll on x-axis. (default 1)",
                             "type": "integer",
+                            "default": 1
                             
                         },
                         "y": {
-                            "description": "Amount to scroll on y-axis (default 0)",
+                            "description": "Amount to scroll on y-axis. (default 0)",
                             "type": "integer",
+                            "default": 0
                         }
                     }
                 },
@@ -267,7 +283,44 @@ def get_td(ip_address):
                     "op": "invokeaction"
                 }]
 
+            },
+
+            "showPulse":{
+                "title": "Display Pulse",
+                "description": "shows a pulse graph on screen for 10 seconds",
+                "forms": [{
+                    "href": "http://{}/actions/showPulse".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+            "clock":{
+                "title": "Show Time",
+                "description": "shows current time on screen for 10 seconds",
+                "forms": [{
+                    "href": "http://{}/actions/clock".format(ip_address),
+                    "contentType": "application/json",
+                    "op": "invokeaction"
+                }]
+            },
+
+
+            "sendImage": {
+                "title": "Upload Image",
+                "description": "Takes a bmp image with size 17-7 pixels with bpp value of 8 as input, and displays it on the screen.",
+                "safe":False,
+                "idempotent":True,
+                "input": {
+  
+                },
+                "forms": [{
+                    "description": "The payload is multipart/form-data which should be indicated in curl command with '--form' flag as in: curl --location --request POST 'http://<device ip>:8080/actions/sendImage' --form 'example.bmp=@'<directory of image>/example.bmp''",
+                    "href": "http://{}/actions/sendImage".format(ip_address),
+                    "contentType": "image/bmp",
+                    "op": "invokeaction"
+                }]
             }
            
         }
     }
+
