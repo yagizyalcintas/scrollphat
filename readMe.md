@@ -1,12 +1,12 @@
 ## Requirements:
 * Pyhton 3.7
-* Pip 18.1 
+* Pip3 9.0.1 
 &nbsp;
 
 
 ## Installation:
 1. Clone the repository in a local file.
-2. Go into the that directory in terminal and run ``` pip install -r requirements.txt ```
+2. Go into the that directory in terminal and run ``` pip3 install -r requirements.txt ```
 
 &nbsp;
 
