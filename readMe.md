@@ -4,17 +4,13 @@
 &nbsp;
 
 
-## Python Library Dependencies:
-* requests
-* flask
-* scrollphathd
-* jsonschema 
-&nbsp;
-
-
 ## Installation:
+1. Clone the repository in a local file.
+2. Go into the that directory in terminal and run ``` pip install -r requirements.txt ```
 
 &nbsp;
+
+
 
 
 
