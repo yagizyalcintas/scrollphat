@@ -4,7 +4,8 @@ import time
 import json
 import _thread
 from random import randint
-from flask import Flask, request, abort
+from flask import Flask, request, abort,redirect, url_for,flash
+
 from phatTD import get_td
 import scrollphathd
 from jsonschema import Draft6Validator
@@ -33,15 +34,15 @@ def thing_description():
     return json.dumps(get_td(ip_addr)), {'Content-Type': 'application/json'}
 
 
-@app.route("/properties/display_size", methods=["GET"])
+@app.route("/properties/displaySize", methods=["GET"])
 def display_size():
-    return str(scrollphathd.get_shape()), {'Content-Type': 'application/json'}
+    return json.dumps(scrollphathd.get_shape()), {'Content-Type': 'application/json'}
 
 
-@app.route("/actions/set_pixel", methods=["POST"])
+@app.route("/actions/setPixel", methods=["POST"])
 def setPixel():
     if request.is_json:
-        schema = td["actions"]["set_pixel"]["input"]
+        schema = td["actions"]["setPixel"]["input"]
         valid_input = Draft6Validator(schema).is_valid(request.json)
 
         if valid_input:
@@ -72,10 +73,10 @@ def setPixel():
         abort(415)  # Wrong media type.
 
 
-@app.route("/actions/write_string", methods=["POST"])
+@app.route("/actions/writeString", methods=["POST"])
 def writeString():
     if request.is_json:
-        schema = td["actions"]["write_string"]["input"]
+        schema = td["actions"]["writeString"]["input"]
         valid_input = Draft6Validator(schema).is_valid(request.json)
 
         if valid_input:
@@ -117,10 +118,10 @@ def writeString():
         abort(415)  # Wrong media type.
 
 
-@app.route("/actions/write_char", methods=["POST"])
+@app.route("/actions/writeChar", methods=["POST"])
 def writeChar():
     if request.is_json:
-        schema = td["actions"]["write_char"]["input"]
+        schema = td["actions"]["writeChar"]["input"]
         valid_input = Draft6Validator(schema).is_valid(request.json)
 
         if valid_input:
@@ -193,10 +194,10 @@ def fillArea():
         abort(415)  # Wrong media type.
 
 
-@app.route("/actions/clear_rect", methods=["POST"])
+@app.route("/actions/clearRect", methods=["POST"])
 def clearArea():
     if request.is_json:
-        schema = td["actions"]["clear_rect"]["input"]
+        schema = td["actions"]["clearRect"]["input"]
         valid_input = Draft6Validator(schema).is_valid(request.json)
 
         if valid_input:
@@ -262,12 +263,16 @@ def scroll():
     else:
         abort(415)  # Wrong media type.
 
-@app.route("/actions/show_pulse", methods=["POST"])
+@app.route("/actions/showPulse", methods=["POST"])
 def pulse():
+    scrollphathd.clear()
+    scrollphathd.show()
     dur = 10
     count = 0
     img = Image.open("mouth.bmp")
     img.show()
+    scrollphathd.clear()
+    scrollphathd.show()
     def get_pixel(x, y):
         p = img.getpixel((x, y))
 
@@ -296,7 +301,105 @@ def pulse():
         scrollphathd.clear()
         scrollphathd.show()
 
+@app.route("/actions/clock", methods=["POST"])
+def clock():
+    dur = 7
+    count = 0
+    while count < dur*(10):
+        scrollphathd.clear()
 
+        float_sec = (time.time() % 60) / 59.0
+        seconds_progress = float_sec * 15
+
+        if DISPLAY_BAR:
+        # Step through 15 pixels to draw the seconds bar
+            for y in range(15):
+
+                current_pixel = min(seconds_progress, 1)
+                scrollphathd.set_pixel(y + 1, 6, current_pixel * BRIGHTNESS)
+                seconds_progress -= 1
+
+            
+                if seconds_progress <= 0:
+                    break
+
+        else:
+        # Just display a simple dot
+            scrollphathd.set_pixel(int(seconds_progress), 6, BRIGHTNESS)
+
+    # Display the time (HH:MM) in a 5x5 pixel font
+        scrollphathd.write_string(
+            time.strftime("%H:%M"),
+            x=0,               
+            y=0,                  
+            font=font5x5,          
+            brightness=0.3  
+        )
+
+        if int(time.time()) % 2 == 0:
+            scrollphathd.clear_rect(8, 0, 1, 5)
+
+        scrollphathd.show()
+        scrollphathd.flip(x=True, y=True)
+        time.sleep(0.1)
+        count = count + 1
+    
+    return "", 204
+    scrollphathd.clear()
+    scrollphathd.show()
+    ###########################################
+
+@app.route("/actions/sendImage", methods=["POST"])
+def send_image():
+    if request.method == 'POST':
+        try:
+            print("headers")
+            print(request.headers)
+            print("data")
+            print(request.data)
+            print("headers")
+            print(request.files)
+            # uploaded_file = request.files['image']
+            def get_pixel(x, y):
+                p = img.getpixel((x, y))
+                if img.getpalette() is not None:
+                    r, g, b = img.getpalette()[p:p + 3]
+                    p = max(r, g, b)
+                return p / 255.0
+
+            for x in request.files:
+                print(x)
+                uploaded_file = request.files[x]
+                uploaded_file.save(x)
+                print(uploaded_file.filename)
+                img = Image.open(uploaded_file.filename)
+                try:
+                    for x in range(0, 17):
+                        for y in range(0, 7):
+                            brightness = get_pixel(x, y)
+                            scrollphathd.pixel(x, 6 - y, brightness * 0.5)
+                    scrollphathd.flip(x=True, y=False)       
+                    scrollphathd.show()
+               
+                except Exception as e:
+                    print(e)
+                    scrollphathd.clear()
+                    scrollphathd.show()
+            return "",204
+        except Exception as e:
+            print(e)
+            abort(501)
+
+
+
+
+
+    #############################################
+
+
+
+
+##################################33
 def submit_td(ip_addr, tdd_address):
     global td 
     td = get_td(ip_addr)
@@ -318,8 +421,7 @@ def submit_td(ip_addr, tdd_address):
             time.sleep(15)
 
 
-@app.route("/actions/clock", methods=["POST"])
-def clock():
+
     dur = 7
     count = 0
     while count < dur*(10):
@@ -374,6 +476,7 @@ while True:
         # connect to router to ensure a successful connection
         s.connect(('172.16.1.1', 80))
         ip_addr = s.getsockname()[0] + ":" + str(LISTENING_PORT)
+        print(ip_addr)
         break
     except OSError:
         time.sleep(5)
